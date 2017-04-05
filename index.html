@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+  <style type="text/css">
+    .icon {
+      width: 30px;
+    }
+    body {
+      background-color: lightgrey;
+    }
+    table {
+      border-collapse: collapse;
+      border: 1px solid black;
+    }
+    table td,
+    table th {
+      border: 1px solid black;
+      text-align: center;
+      vertical-align: middle;
+      background-color: white;
+    }
+    .temp {
+      color: black;
+      font-weight: bold;
+      font-family: monospace;
+    }
+    .temp-10,
+    .temp-20,
+    .temp-30 {
+      color: red;
+    }
+    .temp-40 {
+      color: black;
+    }
+    .temp-50,
+    .temp-60,
+    .temp-70 {
+      color: black;
+    }
+    .high {
+      color: red;
+    }
+    .med {
+      color: coral;
+    }
+    .midnight {
+      border-left: 4px solid black;
+    }
+    .desc-Clear {
+      color: white;
+    }
+    .desc-Clouds {
+      color: lightgrey;
+    }
+    .desc-Rain {
+      color: red;
+    }
+    .rain-chance {
+      color: white;
+    }
+    .rain-chance.rainy {
+      color: black;
+    }
+  </style>
+</head>
+<body>
+<table id="thetable">
+  <thead id="header"></thead>
+  <tbody id="body"></tbody>
+</table>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+<script>
+DAYNAMES = {
+  0: 'Sun',
+  1: 'Mon',
+  2: 'Tue',
+  3: 'Wed',
+  4: 'Thu',
+  5: 'Fri',
+  6: 'Sat',
+}
+function displayForecast(items) {
+  let header = $('#header');
+  let header_parts = [];
+  let body = $('#body');
+  _(items)
+  .each(item => {
+    console.log(item.city.name);
+    let row = $('<tr>')
+    row.append($('<th>').text(item.city.name))
+    header_parts = [];
+    _.each(item.list, slice => {
+      let cell = $('<td>');
+      let icon = slice.weather[0].icon;
+      // cell.append($('<img>')
+      //   .attr('src', `http://openweathermap.org/img/w/${icon}.png`)
+      //   .attr('class', 'icon'));
+
+      let description = slice.weather[0].main;
+      let low = parseInt(slice.main.temp_min);
+      let range = Math.floor(Math.floor(low / 10.0) * 10)
+
+      let wind = parseInt(slice.wind.speed || 0);
+      let windclass = '';
+      if (wind > 20) {
+        windclass = 'high';
+      } else if (wind > 10) {
+        windclass = 'med';
+      }
+
+      let rain = parseInt(parseFloat((slice.rain || {})['3h'] || 0) * 10) / 10;
+      let rainclass = '';
+      if (rain > 0) {
+        rainclass = 'rainy';
+      }
+      cell.append($('<div>')
+        .html(`<div class="desc-${description}">${description}</div><div class="temp temp-${range}">${low}&deg;F</div><div class="wind ${windclass}">w:${wind}</div><div class="rain-chance ${rainclass}">${rain}in</div>`));
+      row.append(cell);
+      let dt = new Date(slice.dt * 1000);
+      if (dt.getHours() === 0) {
+        cell.attr('class', 'midnight');
+      }
+      console.log(slice);
+      header_parts.push(dt);
+    })
+    body.append(row);
+  })
+  header.append($('<td>'));
+  _(header_parts)
+  .map(part => {
+    return $('<th>').html(DAYNAMES[part.getDay()] + '<br/>' + part.getHours())
+  })
+  .each(th => {
+    header.append(th);
+  })
+}
+$(function() {
+  $.ajax('./forecast.json', {
+    success: (response) => {
+      console.log('response', response);
+      displayForecast(response.data);
+    },
+  });
+});
+</script>
+</body>
+</html>
